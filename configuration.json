@@ -1,0 +1,19 @@
+{
+  "chroot": "/AltimatOS",
+  "tools_root": "$CHROOT/tools",
+  "src_root": "$CHROOT/sources",
+  "build_user": "builder",
+  "build_group": "builders",
+  "os_root": "/",
+  "db_dir": "$OS_ROOT/System/var/db/pkgs",
+  "target_root": "/",
+  "pkg_root": "/tools/src/pkgs",
+  "build_dir": "$PKG_ROOT/build",
+  "sources_dir": "$PKG_ROOT/sources",
+  "blueprints_dir": "$PKG_ROOT/blueprints",
+  "tmp_dir": "$PKG_ROOT/temp",
+  "srcpkg_dir": "$PKG_ROOT/lpkgsrc",
+  "binpkg_dir": "$PKG_ROOT/lpkg/$ARCH",
+  "metapkg_dir": "$PKG_ROOT/lmpkg/$ARCH",
+  "containerpkg_dir": "$PKG_ROOT/lcpkg/$ARCH"
+}
