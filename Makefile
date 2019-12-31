@@ -28,3 +28,6 @@ install:
 	$(INSTALL) -o 0 -g 0 -m 0644 configuration.json \
 		$(DESTDIR)$(PREFIX)$(CFGDIR)/lpkg/configuration.json
 #	$(INSTALL) -o 0 -g 0 -m 0755 
+
+test:
+	PERL_DL_NONLAZY=1 DEBUG=0 "/usr/bin/env" "perl" "-MExtUtils::Command::MM" "-MTest::Harness" "-e" "undef *Test::Harness::Switches; test_harness(0, 'lib')" t/*.t
