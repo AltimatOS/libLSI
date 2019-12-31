@@ -4,6 +4,7 @@
   "src_root": "$CHROOT/sources",
   "build_user": "builder",
   "build_group": "builders",
+  "distribution_tag": "aos",
   "os_root": "/",
   "db_dir": "$OS_ROOT/System/var/db/pkgs",
   "target_root": "/",
@@ -12,8 +13,8 @@
   "sources_dir": "$PKG_ROOT/sources",
   "blueprints_dir": "$PKG_ROOT/blueprints",
   "tmp_dir": "$PKG_ROOT/temp",
-  "srcpkg_dir": "$PKG_ROOT/lpkgsrc",
-  "binpkg_dir": "$PKG_ROOT/lpkg/$ARCH",
-  "metapkg_dir": "$PKG_ROOT/lmpkg/$ARCH",
-  "containerpkg_dir": "$PKG_ROOT/lcpkg/$ARCH"
+  "srcpkg_dir": "$PKG_ROOT/lsisrcpkg",
+  "binpkg_dir": "$PKG_ROOT/lsipkg/$ARCH",
+  "metapkg_dir": "$PKG_ROOT/lsi_metapkg/$ARCH",
+  "containerpkg_dir": "$PKG_ROOT/lsi_cntrpkg/$ARCH"
 }
