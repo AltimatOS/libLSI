@@ -1,12 +1,12 @@
-# lpkglib
+# libLSI
 
-Core library of functions and configuration for the Linux Package system from AltimatOS.
+Core library of functions and configuration for the Linux Software Installer system from AltimatOS.
 
 To install, run the following commands:
 
 ```sh
-git clone git@github.com:AltimatOS/lpkglib
-cd lpkglib
+git clone git@github.com:AltimatOS/libLSI
+cd libLSI
 sudo make install
 ```
 
