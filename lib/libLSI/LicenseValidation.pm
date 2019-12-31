@@ -20,6 +20,10 @@ use File::Slurper 'read_text';
 use FindBin;
 use JSON;
 
+use libLSI::Constants;
+
+our $VERSION = $libLSI::Constants::VERSION;
+
 sub new ($class) {
     my $self = {};
     bless $self, $class;
