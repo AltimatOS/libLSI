@@ -16,4 +16,6 @@ use libLSI::Constants;
 # use libLSI::PkgBuilder;
 # use libLSI::Misc;
 
+our $VERSION = $libLSI::Constants::VERSION;
+
 true;
