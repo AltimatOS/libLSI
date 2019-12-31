@@ -7,11 +7,13 @@ use utf8;
 
 use boolean;
 
+use libLSI::Constants;
+
 BEGIN {
     use Exporter ();
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, @EXPORT_TAGS);
 
-    $VERSION     = "0.1";
+    $VERSION     = $libLSI::Constants::VERSION;
     @ISA         = qw(Exporter);
     @EXPORT      = qw();
     @EXPORT_TAGS = (
