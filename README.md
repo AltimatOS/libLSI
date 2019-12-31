@@ -7,6 +7,7 @@ To install, run the following commands:
 ```sh
 git clone git@github.com:AltimatOS/libLSI
 cd libLSI
+make test
 sudo make install
 ```
 
