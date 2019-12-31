@@ -7,11 +7,13 @@ use utf8;
 
 use boolean;
 
+use libLSI::Constants;
+
 BEGIN {
     use Exporter ();
     our ($VERSION, @ISA, @EXPORT);
 
-    $VERSION     = "0.0.1";
+    $VERSION     = $libLSI::Constants::VERSION;
     @ISA         = qw(Exporter);
     @EXPORT      = qw(
         %_errors
@@ -551,6 +553,10 @@ our %_errors = (
     'EHWPOISON' => {
         'code' => '133',
         'msg' => 'Memory page has hardware error'
+    },
+    'EWRONGPKGTYPE' => {
+        'code' => '200',
+        'msg' => 'Invalide package type'
     }
 );
 
