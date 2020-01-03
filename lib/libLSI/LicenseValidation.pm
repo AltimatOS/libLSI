@@ -43,31 +43,31 @@ our sub validate ($self, $content_type, $short_license_name) {
     if ($short_license_name ne 'Proprietary') {
         if ($content_type eq 'software') {
             if (exists $licenses_struct->{'F/OSS'}->{$short_license_name}) {
-                return true;
+                return 1, 1;
             } else {
-                return false;
+                return 0, 0;
             }
         } elsif ($content_type eq 'content') {
             if (exists $licenses_struct->{'FreeOrOpenSourceContent'}->{$short_license_name}) {
-                return true;
+                return 1, 1;
             } else {
-                return false;
+                return 0, 0;
             }
         } elsif ($content_type eq 'documentation') {
             if (exists $licenses_struct->{'FreeOrOpenDocumentation'}->{$short_license_name}) {
-                return true;
+                return 1, 1;
             } else {
-                return false;
+                return 0, 0;
             }
         } elsif ($content_type eq 'fonts') {
             if (exists $licenses_struct->{'FreeOrOpenSourceFonts'}->{$short_license_name}) {
-                return true;
+                return 1, 1;
             } else {
-                return false;
+                return 0, 0;
             }
         }
     } else {
-        return 'Proprietary';
+        return 1, 0;
     }
 }
 
