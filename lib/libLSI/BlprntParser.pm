@@ -15,6 +15,7 @@ no warnings "experimental::smartmatch";
 use feature 'lexical_subs';
 use feature 'signatures';
 
+use MIME::Base64;
 use boolean;
 use Data::Dumper;
 use File::Basename;
@@ -980,12 +981,14 @@ our sub parse_pkg_description ($self, @pkg_info) {
             foreach my $_line (@pkg_info) {
                 dbgmsg("DEBUG", "\$_line: $_line");
                 last if ($_line =~ m/^\s+EndDescription\s*$/);
-                push(@raw_description, $_line);
+                $_line =~ s/^\s+|\s+$//g;
+                push(@raw_description, $_line) if $_line !~ m/^\s*Description\s*$/;
             }
         }
     }
 
-    say STDERR "DESCRIPTION: @raw_description";
+    $description = "@raw_description";
+    $description = encode_base64($description);
 
     return $description;
 }
@@ -1059,6 +1062,7 @@ our sub parse_bp_pkgs ($self, $pkg_name, $bp_struct, @pkg_info) {
         } elsif ($line =~ m/^Description/) {
             dbgmsg("DEBUG", "Found package keyword 'Description' block");
             my $description = parse_pkg_description($self, @pkg_info);
+            chomp($description);
             $bp_struct{'packages'}->{$pkg_name}->{'description'} = $description;
         } elsif ($line =~ m/^Trigger\s+[a-zA-Z0-9\-\_\+\.]+/) {
             dbgmsg("DEBUG", "Found package keyword 'Trigger' block");
