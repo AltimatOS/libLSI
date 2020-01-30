@@ -5,30 +5,36 @@ Blueprint
   distribution: AltimatOS
   license: GPLv3+
   pkgtype: software
+  pkgformat: standard
   buildrequires: glibc, gcc, binutils, make
   buildroot: $TMPDIR/$NAME-$VERSION-$RELEASE-buildroot
   url: https://savannah.gnu.org/projects/which/
   source0: http://ftp.gnu.org/pub/gnu/$NAME/$NAME-$VERSION.tar.gz
-  chksum:  unavailable
-  signature: http://ftp.gnu.org/pub/gnu/$NAME/$NAME-$VERSION.tar.gz.sig
+  chksum0:  unavailable
+  signature0: http://ftp.gnu.org/pub/gnu/$NAME/$NAME-$VERSION.tar.gz.sig
   root_required_for_build: false
+  vendor: GNU Project
+  upstream_maintainer: Carlo Wood <carlo@alinoe.com>
+  packages: which
 
   Package which
     summary: A tool to find the location of binaries
     group: System/Base
-    tags: core
-    requires: info, bash, glibc, binutils
+    tags: core, essential, cli
+    requires: info, bash, glibc, binutils, gcc-libs, coreutils
+    pkgclass: application
 
     Description
-      The which command shows the full pathname of a specified program, if
-      the specified program is in your PATH.
-    End
+      The 'which' command shows the full pathname of a specified program if
+      the specified program is located in a directory defined in your PATH
+      environment variable.
+    EndDescription
 
     PostInstall
       if [[ -x $INSTALL_INFO ]]; then
         $INSTALL_INFO --info-dir="$_INFO_DIR" "$_INFO_DIR/which.info.gz"
       fi
-    End
+    EndPostInstall
 
     PreUninstall
       if [[ $PKG_LIFECYCLE == "uninstall" ]]; then
@@ -36,40 +42,42 @@ Blueprint
           $INSTALL_INFO --quiet --delete --info-dir="$_INFO_DIR" "$_INFO_DIR/which.info.gz"
         fi
       fi
-    End
+    EndPreUninstall
 
     FileList
       default_attributes -o root -g root
       install_docs EXAMPLES README README.alias AUTHORS NEWS
       install_license COPYING
-      Packaged_files \
-        $_BIN_DIR/which \
-        $_INFO_DIR/which.info* \
-        $_MAN_DIR/man1/which.1*
-    End
+      Files
+        $_BIN_DIR/which
+        $_INFO_DIR/which.info*
+        $_MAN_1_DIR/which.1*
+      EndFiles
+    EndFileList
   End
 
   Build
     BuildPrep
+      checksig $SIGNATURE0
       unpack $SOURCE0
-    End
+    EndBuildPrep
 
     BuildCompile
       system_configure
       make $MAKE_FLAGS
-    End
+    EndBuildCompile
 
     BuildCheck
       make test
-    End
+    EndBuildCheck
 
     BuildInstall
       pkg_make_install $MAKE_INSTALL_FLAGS
-    End
-  End
+    EndBuildInstall
+  EndBuild
 
   ChangeLog
     * 2019 12 18 Gary Greene <greeneg@altimatos.com> | 2.21-1aos
     - Initial build
-  End
+  EndChangelog
 End

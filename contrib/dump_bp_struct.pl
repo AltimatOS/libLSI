@@ -18,6 +18,7 @@ use lib "$FindBin::Bin/../lib";
 
 use boolean;
 use Data::Dumper;
+use JSON;
 
 use libLSI::BlprntParser;
 use libLSI::Errors;
@@ -34,3 +35,11 @@ libLSI::BlprntParser::dbgmsg("INFO", "Blueprint: $bp_file");
 my $bp_parser = libLSI::BlprntParser->new();
 my %bp = $bp_parser->process_blueprint_file($bp_file);
 libLSI::BlprntParser::dbgmsg("TRACE", Dumper \%bp);
+my $json = JSON->new();
+# set utf8
+$json = $json->utf8(true);
+# set pretty
+$json = $json->indent(true);
+$json = $json->space_after(true);
+my $json_struct = $json->encode(\%bp);
+print STDOUT $json_struct;

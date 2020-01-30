@@ -17,225 +17,15 @@ use feature 'signatures';
 
 use boolean;
 use Data::Dumper;
-use List::MoreUtils;
+use File::Basename;
+use List::MoreUtils qw(first_index);
 use Path::Tiny;
+use URI;
 
 use libLSI::Constants;
 use libLSI::Configuration;
 use libLSI::Errors;
 use libLSI::LicenseValidation;
-
-# my $dsl = Marpa::R2::Scanless->G->new(
-#     {
-#         action_object  = 'BlprntActions';
-#         default_action = 'default_action';
-#         source         = \(<<'EO_DSL'),
-# start             ::= block_blueprint
-# 
-# block_blueprint   ::= keyword_blueprint
-#                         attribs_blueprint
-#                       keyword_end
-# 
-# block_pkg         ::= keyword_binary_pkg
-#                         attribs_pkg
-#                       keyword_end
-# 
-# block_build       ::= keyword_build t_string_arch
-#                         1(block_prep)
-#                         1(block_compile)
-#                         1[block_check]
-#                         1(block_install)
-#                       keyword_end
-# 
-# block_prep        ::= keyword_prep
-#                         1*t_string_line
-#                       keyword_end
-# 
-# block_check       ::= keyword_check
-#                         1*t_string_line
-#                       keyword_end
-# 
-# block_compile     ::= keyword_compile
-#                         1*t_string_line
-#                       keyword_end
-# 
-# block_install     ::= keyword_install
-#                         1*t_string_line
-#                       keyword_end
-# 
-# block_chglog      ::= keyword_changelog
-#                         1*(block_chglog_entry)
-#                       keyword_end
-# 
-# block_chglog_entry ::= c_record t_date t_nickname t_email c_separator t_pkgver c_nline c_entry t_string_record
-# 
-# block_description ::= keyword_description
-#                         1*t_string_line
-#                       keyword_end
-# 
-# block_filelist    ::= keyword_filelist
-#                         1*t_string_line
-#                       keyword_end
-# 
-# block_trigger     ::= keyword_trigger t_capability
-#                         1*t_string_line
-#                       keyword_end
-# 
-# block_preinst     ::= keyword_preinstall
-#                         1*t_string_line
-#                       keyword_end
-# 
-# block_postinst    ::= keyword_postinstall
-#                         1*t_string_line
-#                       keyword_end
-# 
-# block_preuninst   ::= keyword_preuninstall
-#                         1*t_string_line
-#                       keyword_end
-# 
-# block_postuninst  ::= keyword_postuninstall
-#                         1*t_string_line
-#                       keyword_end
-# 
-# attribs_blueprint ::= 1(glbl_pkgname)
-#                       | [glbl_epoch]
-#                       | 1(glbl_version)
-#                       | 1(glbl_release)
-#                       | 1*glbl_build_requires
-#                       | 1*glbl_sources
-#                       | [*glbl_patches]
-#                       | 1(glbl_root_bld)
-#                       | 1(glbl_buildroot)
-#                       | 1*block_pkg
-#                       | 1*block_build
-#                       | 1(block_chglog)
-# 
-# attribs_pkg       ::= 1(attrib_pkgname)
-#                       | 1(attrib_summary)
-#                       | 1*attrib_pkgtags
-#                       | 1(attrib_pkggrp)
-#                       | [*attrib_requires]
-#                       | 1(block_description)
-#                       | [*block_trigger]
-#                       | [ block_preinst | block_postinst | block_preuninst | block_postuninst ]
-#                       | 1(block_filelist)
-# 
-# glbl_pkgname    ::= keyword_name c_assign t_string_ascii
-# 
-# glbl_epoch      ::= keyword_epoch c_assign t_int
-# 
-# glbl_version    ::= keyword_version c_assign t_semversion
-# 
-# glbl_release    ::= keyword_release c_assign t_int
-# 
-# glbl_build_requires  ::= keyword_buildrequires c_assign t_capability
-# 
-# glbl_sources    ::= (keyword_source(t_int)) c_assign t_string_filename
-# 
-# glbl_patches    ::= (keyword_patch(t_int)) c_assign t_string_filename
-# 
-# glbl_root_bld   ::= keyword_require_root_build c_assign t_bool
-# 
-# attrib_pkgname  ::= keyword_pkgname c_assign t_string_ascii
-# 
-# attrib_summary  ::= keyword_summary c_assign t_string_line
-# 
-# attrib_pkggrp   ::= keyword_group c_assign t_string_group
-# 
-# attrib_pkgtags  ::= keyword_tag c_assign 1*(t_string_tag)
-# 
-# attrib_requires ::= keyword_require c_assign 1*(t_capability)
-# 
-# keyword_blueprint          ~ 'Blueprint'
-# keyword_build              ~ 'Build'
-# keyword_buildrequires      ~ 'buildrequires'
-# keyword_changelog          ~ 'ChangeLog'
-# keyword_check              ~ 'BuildCheck'
-# keyword_compile            ~ 'BuildCompile'
-# keyword_description        ~ 'Description'
-# keyword_epoch              ~ 'epoch'
-# keyword_end                ~ 'End'
-# keyword_group              ~ 'group'
-# keyword_install            ~ 'BuildInstall'
-# keyword_name               ~ 'name'
-# keyword_package            ~ 'Package'
-# keyword_patch              ~ 'patch'
-# keyword_pkgname            ~ 'pkgname'
-# keyword_postinstall        ~ 'PostInstall'
-# keyword_postuninstall      ~ 'PostUninstall'
-# keyword_preinstall         ~ 'PreInstall'
-# keyword_prep               ~ 'BuildPrep'
-# keyword_preuninstall       ~ 'PreUninstall'
-# keyword_require_root_build ~ 'root_required_for_build'
-# keyword_release            ~ 'release'
-# keyword_require            ~ 'requires'
-# keyword_source             ~ 'source'
-# keyword_summary            ~ 'summary'
-# keyword_tag                ~ 'tags'
-# keyword_version            ~ 'version'
-# keyword_license            ~ 'license'
-# keyword_url                ~ 'url'
-# keyword_chksum             ~ 'chksum'
-# keyword_chksum_type        ~ 'chksumtype'
-# keyword_src_signature      ~ 'srcsignature'
-# 
-# operator        ::= op_eq
-#                     | op_gt
-#                     | op_lt
-#                     | op_ge
-#                     | op_le
-#                     
-# op_eq           ~   '=='
-# op_gt           ~   '>'
-# op_lt           ~   '<'
-# op_ge           ~   '>='
-# op_le           ~   '<='
-# 
-# c_assign        ~   ':'
-# 
-# c_comma         ~   ','
-# 
-# c_record        ~   '*'
-# 
-# c_separator     ~   '|'
-# 
-# c_nline         ~   "\n"
-# 
-# c_entry         ~   '-'
-# 
-# t_capability    ::= t_pkg_word [ operator t_semversion ]
-#                     | t_string_filename
-# 
-# t_date          ::= t_year t_month t_day
-# 
-# t_month         ::= 'Jan' | 'Feb' | 'Mar' | 'Apr' | 'May' | 'Jun' | 'Jul' | 'Aug' | 'Sep' | 'Oct' | 'Nov' | 'Dec'
-# 
-# t_day           ::= 2(t_digit)
-# 
-# t_year          ::= 4(t_digit)
-# 
-# t_digit         ~   [\d]
-# 
-# t_int           ~   [\d+]
-# 
-# t_nickname      ~   [\w+]
-# 
-# t_email         ~   [[a-zA-Z\d\.+]\@[a-zA-Z\d\.+]]
-# 
-# t_bool          ::= true | false
-# true            ~   1
-# false           ~   0
-# 
-# t_string_ascii    ~ [^[a-zA-Z\-]+$]
-# t_string_line     ~ [^.*$]
-# t_string_filename ~ [^\w+$]
-# t_string_tag      ~ [\w](c_comma)
-# t_string_group    ~ [[a-zA-Z\d]+\/]
-# 
-# t_semversion      ~ [^(\d+\.)?(\d+\.)?(\*|\d+)$]
-# EO_DSL
-#     }
-# );
 
 =head1 NAME
 
@@ -260,7 +50,7 @@ my %keyword = (
 my $cfg = libLSI::Configuration->new();
 my $cfg_struct = $cfg->get();
 if (! defined $cfg_struct) {
-    say STDERR "ERROR: " . $_errors{'ENOENT'}->{'msg'} . ": Exiting";
+    dbgmsg("ERROR", $_errors{'ENOENT'}->{'msg'} . ": Exiting");
     exit $_errors{'ENOENT'}->{'code'};
 }
 
@@ -298,6 +88,9 @@ if (! defined $cfg_struct) {
 
 =cut
 sub new ($class) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
     my $self = {};
     bless $self, $class;
 
@@ -446,8 +239,33 @@ sub dbgmsg ($level, $msg) {
         exit $_errors{'EINVAL'}->{'code'};
     }
 
+    my %level_by_int = (
+        8 => 'TRACE',
+        7 => 'DEBUG',
+        6 => 'INFO',
+        5 => 'NOTICE',
+        4 => 'WARNING',
+        3 => 'ERROR',
+        2 => 'CRITICAL',
+        1 => 'ALERT',
+        0 => 'EMERGENCY'
+    );
+    my %level_by_name = (
+        'TRACE'     => 8,
+        'DEBUG'     => 7,
+        'INFO'      => 6,
+        'NOTICE'    => 5,
+        'WARNING'   => 4,
+        'ERROR'     => 3,
+        'CRITICAL'  => 2,
+        'ALERT'     => 1,
+        'EMERGENCY' => 0
+    );
+
     if (defined $ENV{'LSI_DEBUG'}) {
-        say STDERR "$level: $msg";
+        if ($ENV{'LSI_DEBUG'} >= $level_by_name{$level}) {
+            say STDERR "$level: $msg";
+        }
     }
 }
 
@@ -485,6 +303,9 @@ sub dbgmsg ($level, $msg) {
 
 =cut
 our sub check_for_blueprint_block_bounding ($self, @contents) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
     # trim leading and trailing whitespace...
     my $f_line = $contents[0];
     my $l_line = $contents[-1];
@@ -559,6 +380,9 @@ This is returned only if the package type is a known type:
 
 =cut
 our sub parse_pkg_type ($self, @bp_wc_contents) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
     foreach my $line (@bp_wc_contents) {
         $line =~ s/^\s+|\s+$//g;
         if ($line =~ m/^pkgtype:\s+(content|documentation|fonts|software)$/) {
@@ -575,19 +399,25 @@ our sub parse_pkg_type ($self, @bp_wc_contents) {
 =head2 METHOD: is_capability_name
 =cut
 my sub is_capability_name ($self, $string) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
     if ($string =~ m/^/) {}
 }
 
 our sub parse_srcpkg_name ($self, $bp_wc) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
     foreach my $line (@{$bp_wc}) {
         $line =~ s/^\s+|\s+$//g;
 
         # name takes a normal word value (no whitespace)
         if ($line =~ m/^name:\s+\w+$/) {
-            dbgmsg("TRACE", "Found blueprint 'name' keyword");
+            dbgmsg("DEBUG", "Found blueprint 'name' keyword");
             @{$bp_wc} = grep { $_ ne $line } @{$bp_wc};
             $line =~ s/^name:\s+//;
-            dbgmsg("TRACE", "blueprint 'name' value: $line");
+            dbgmsg("DEBUG", "blueprint 'name' value: $line");
             return $line;
         }
     }
@@ -595,6 +425,9 @@ our sub parse_srcpkg_name ($self, $bp_wc) {
 }
 
 our sub is_version_string ($self, $version_string) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
     # versions can be of the following formats:
     #  - lone digit                             example: 1
     #  - major dot minor                        example: 1.0
@@ -609,15 +442,18 @@ our sub is_version_string ($self, $version_string) {
 }
 
 our sub parse_pkg_version ($self, $bp_wc) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
     foreach my $line (@{$bp_wc}) {
         $line =~ s/^\s+|\s+$//g;
 
         if ($line =~ m/^version:\s+.*$/) {
-            dbgmsg("TRACE", "Found blueprint 'version' keyword");
+            dbgmsg("DEBUG", "Found blueprint 'version' keyword");
             @{$bp_wc} = grep { $_ ne $line } @{$bp_wc};
             $line =~ s/^version:\s+//;
             if (is_version_string($self, $line)) {
-                dbgmsg("TRACE", "blueprint 'version' value: $line");
+                dbgmsg("DEBUG", "blueprint 'version' value: $line");
                 return $line;
             }
         }
@@ -626,14 +462,17 @@ our sub parse_pkg_version ($self, $bp_wc) {
 }
 
 our sub parse_pkg_release ($self, $bp_wc) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
     foreach my $line (@{$bp_wc}) {
         $line =~ s/^\s+|\+s$//g;
 
         if ($line =~ m/^release:\s+\d+.*$/) {
             @{$bp_wc} = grep { $_ ne $line } @{$bp_wc};
-            dbgmsg("TRACE", "Found blueprint 'release' keyword");
+            dbgmsg("DEBUG", "Found blueprint 'release' keyword");
             $line =~ s/^release:\s+//;
-            dbgmsg("TRACE", "blueprint 'release' value: $line");
+            dbgmsg("DEBUG", "blueprint 'release' value: $line");
             return $line;
         }
     }
@@ -641,14 +480,17 @@ our sub parse_pkg_release ($self, $bp_wc) {
 }
 
 our sub parse_pkg_distribution ($self, $bp_wc) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
     foreach my $line (@{$bp_wc}) {
         $line =~ s/^\s+|\s+$//g;
 
         if ($line =~ m/^distribution:\s+\w+$/) {
             @{$bp_wc} = grep { $_ ne $line } @{$bp_wc};
-            dbgmsg("TRACE", "Found blueprint 'distribution' keyword");
+            dbgmsg("DEBUG", "Found blueprint 'distribution' keyword");
             $line =~ s/^distribution:\s+//;
-            dbgmsg("TRACE", "blueprint 'distribution' value: $line");
+            dbgmsg("DEBUG", "blueprint 'distribution' value: $line");
             return $line;
         }
     }
@@ -656,12 +498,15 @@ our sub parse_pkg_distribution ($self, $bp_wc) {
 }
 
 our sub parse_pkg_license ($self, $content_type, $bp_wc) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
     foreach my $line (@{$bp_wc}) {
         $line =~ s/^\s+|\s+$//g;
 
         if ($line =~ m/^license:\s+([a-zA-Z0-9\.\_\-\+\(\)]+)$/) {
             @{$bp_wc} = grep { $_ ne $line } @{$bp_wc};
-            dbgmsg("TRACE", "Found blueprint 'license' keyword");
+            dbgmsg("DEBUG", "Found blueprint 'license' keyword");
             $line =~ s/license:\s+//;
             # test that this is a valid open source license. If not,
             #   set the taint flag
@@ -680,21 +525,27 @@ our sub parse_pkg_license ($self, $content_type, $bp_wc) {
 }
 
 our sub parse_capabilities ($self, $string) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
     return split(', ', $string);
 }
 
 our sub make_caps_struct ($self, @cap_list) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
     my %cap_struct;
     foreach my $ent (@cap_list) {
-        dbgmsg("TRACE", "cap_list entry: $ent");
-        if ($ent =~ m|^/[a-z/]+$|) {
-            dbgmsg("TRACE", "Capability type: file_path");
+        dbgmsg("DEBUG", "cap_list entry: $ent");
+        if ($ent =~ m|^/[a-zA-Z\-\_/]+$|) {
+            dbgmsg("DEBUG", "Capability type: file_path");
             $cap_struct{"$ent"} = { 'type' => 'file_path' };
         } elsif ($ent =~ m/^\w+$/) {
-            dbgmsg("TRACE", "Capability type: unpinned_pkg");
+            dbgmsg("DEBUG", "Capability type: unpinned_pkg");
             $cap_struct{"$ent"} = { 'type' => 'unpinned_pkg' };
         } elsif ($ent =~ m|^(\w+\s+\>\<\=\!\s+.*)$|) {
-            dbgmsg("TRACE", "Capability type: pinned_pkg");
+            dbgmsg("DEBUG", "Capability type: pinned_pkg");
             my ($pkg_name, $cmp_expression, $version) = split(/\s+/, $ent);
             $cap_struct{"$pkg_name"} = { 'type' => 'pinned_pkg' };
             $cap_struct{"$pkg_name"} = { 'cmpexp' => "$cmp_expression" };
@@ -705,12 +556,15 @@ our sub make_caps_struct ($self, @cap_list) {
 }
 
 our sub parse_pkg_build_requires ($self, $bp_wc) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
     foreach my $line (@{$bp_wc}) {
         $line =~ s/^\s+|\s+$//g;
 
         if ($line =~ m/^buildrequires:\s+([\w+\,\s+]+)$/) {
             @{$bp_wc} = grep { $_ ne $line } @{$bp_wc};
-            dbgmsg("TRACE", "Found blueprint 'buildrequires' keyword");
+            dbgmsg("DEBUG", "Found blueprint 'buildrequires' keyword");
             $line =~ s/buildrequires:\s+//;
             # parse capabilities
             my @cap_list = parse_capabilities($self, $line);
@@ -721,11 +575,320 @@ our sub parse_pkg_build_requires ($self, $bp_wc) {
     return undef;
 }
 
-our sub parse_pkg_buildroot ($self, $bp_wc) {
+our sub parse_pkg_requires ($self, $bp_wc) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
 
+    foreach my $line (@{$bp_wc}) {
+        $line =~ s/^\s+|\s+$//g;
+
+        if ($line =~ m/^requires:\s+([\w+\,\s+]+)$/) {
+            @{$bp_wc} = grep { $_ ne $line } @{$bp_wc};
+            dbgmsg("DEBUG", "Found blueprint 'requires' keyword");
+            $line =~ s/requires:\s+//;
+            # parse capabilities
+            my @cap_list = parse_capabilities($self, $line);
+            my %cap_struct = make_caps_struct($self, @cap_list);
+            return \%cap_struct;
+        }
+    }
+    return undef;
+}
+
+our sub interpolate_variables ($self, $bp_struct, $line) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
+    # read in configuration JSON
+    my $cfg = libLSI::Configuration->new();
+    my $cfg_struct = $cfg->get();
+
+    my $pkg_root = $cfg_struct->{'pkg_root'};
+    my $tmp_dir = $cfg_struct->{'tmp_dir'};
+    my $srcpkg_name = $bp_struct->{'srcpkg_name'};
+    my $pkg_version = $bp_struct->{'version'};
+    my $pkg_release = $bp_struct->{'release'};
+
+    if ($line =~ m/\$NAME/) {
+        $line =~ s/\$NAME/$srcpkg_name/g;
+    }
+    if ($line =~ m/\$VERSION/) {
+        $line =~ s/\$VERSION/$pkg_version/g;
+    }
+    if ($line =~ m/\$RELEASE/) {
+        $line =~ s/\$RELEASE/$pkg_release/;
+    }
+    if ($line =~ m/\$TMP_DIR|\$TMPDIR/) {
+        $line =~ s/\$TMP_DIR|\$TMPDIR/$tmp_dir/;
+    }
+    if ($line =~ m/\$PKG_ROOT/) {
+        $line =~ s/\$PKG_ROOT/$pkg_root/;
+    }
+
+    return $line;
+}
+
+our sub parse_pkg_buildroot ($self, $bp_struct, $bp_wc) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
+    foreach my $line (@{$bp_wc}) {
+        $line =~ s/^\s+|\s+$//g;
+
+        if ($line =~ m/^buildroot:\s+\$[a-zA-Z0-9]+\/[\$a-zA-Z0-9\-\_\/]+$/) {
+            @{$bp_wc} = grep { $_ ne $line } @{$bp_wc};
+            dbgmsg("DEBUG", "Found blueprint 'buildroot' keyword");
+            $line =~ s/buildroot:\s+//;
+            # do substitutions
+            $line = interpolate_variables($self, $bp_struct, $line);
+            return $line;
+        }
+    }
+    # if the build root isn't defined, force a sane default
+    my $cfg = libLSI::Configuration->new();
+    my $cfg_struct = $cfg->get();
+    my $pkg_name = $bp_struct->{'srcpkg_name'};
+    my $pkg_version = $bp_struct->{'version'};
+    my $pkg_release = $bp_struct->{'release'};
+    my $default_br = "$cfg_struct->{'tmp_dir'}/${pkg_name}-${pkg_version}-${pkg_release}-buildroot";
+    $default_br = interpolate_variables($self, $bp_struct, $default_br);
+    return $default_br;
+}
+
+our sub parse_pkg_url ($self, $bp_wc) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
+    foreach my $line (@{$bp_wc}) {
+        $line =~ s/^\s+|\s+$//g;
+
+        if ($line =~ m/^url:\s+(http|https|ftp):\/\/[a-zA-Z0-9\.\-\_\?\/\&\;\=\:\,\{\}\[\]\'\"]+/) {
+            @{$bp_wc} = grep { $_ ne $line } @{$bp_wc};
+            dbgmsg("DEBUG", "Found blueprint 'url' keyword");
+            $line =~ s/^url:\s+//;
+            return $line;
+        }
+    }
+    return undef;
+}
+
+our sub parse_source_chksum ($self, $src_position, $bp_wc) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
+    foreach my $line (@{$bp_wc}) {
+        $line =~ s/^\s+|\s+$//g;
+
+        if ($line =~ m/^chksum$src_position:\s+.*/) {
+            dbgmsg("DEBUG", "Found blueprint 'chksum$src_position' keyword");
+            @{$bp_wc} = grep { $_ ne $line } @{$bp_wc};
+            $line =~ s|^chksum$src_position:\s+||;
+            dbgmsg("DEBUG", "Value of chksum$src_position: $line");
+
+            if ($line eq 'unavailable') {
+                return undef;
+            } else {
+                return $line;
+            }
+        }
+    }
+
+    return undef;
+}
+
+our sub parse_source_signature ($self, $src_position, $bp_struct, $bp_wc) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
+    my %signature;
+    foreach my $line (@{$bp_wc}) {
+        $line =~ s/^\s+|\s+$//g;
+
+        if ($line =~ m/^signature$src_position:\s+.*/) {
+            dbgmsg("DEBUG", "Found blueprint 'signature$src_position' keyword");
+            @{$bp_wc} = grep { $_ ne $line } @{$bp_wc};
+            $line =~ s|^signature$src_position:\s+||;
+            $line = interpolate_variables($self, $bp_struct, $line);
+            dbgmsg("DEBUG", "Value of 'signature$src_position': $line");
+            my $file = undef;
+            if ($line =~ m/^(http|https|ftp):\/\/.*/) {
+                dbgmsg("DEBUG", "Contains URL for file location");
+                my $url = URI->new($line);
+                my $path = $url->path();
+                $file = fileparse($path);
+                $signature{'signature_file'} = $file;
+                $signature{'url'} = $url->as_string;
+            } else {
+                $signature{'signature_file'} = $line;
+                $signature{'url'} = undef;
+            }
+            return \%signature;
+        }
+    }
+
+    return undef;
+}
+
+our sub parse_pkg_sources ($self, $bp_struct, $bp_wc) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
+    my %sources;
+    foreach my $line (@{$bp_wc}) {
+        $line =~ s/^\s+|\s+$//g;
+
+        if ($line =~ m/^(source(\d*)):\s+.*$/) {
+            # if it exists, grab the numeric entry to use as a key record
+            my $position = undef;
+            if (defined $2) {
+                dbgmsg("DEBUG", "Got positional of $2");
+                $position = $2;
+            } else {
+                # there is only one source, so set to 0
+                dbgmsg("DEBUG", "Found no positional. Set to 0");
+                $position = 0;
+            }
+            dbgmsg("DEBUG", "Found blueprint 'source$position' keyword");
+            @{$bp_wc} = grep { $_ ne $line } @{$bp_wc};
+            $line =~ s/^source\d*:\s+//;
+            $line = interpolate_variables($self, $bp_struct, $line);
+            if ($line =~ m/^(http|https|ftp):\/\/.*/) {
+                dbgmsg("DEBUG", "Contains URL to file");
+                # is url, lets parse it
+                my $url = URI->new($line);
+                my $path = $url->path();
+                my $file = fileparse($path);
+                dbgmsg("DEBUG", "URL: $line");
+                dbgmsg("DEBUG", "URL path: $path");
+                dbgmsg("DEBUG", "Filename: $file");
+                # now see if the blueprint contains a usable checksum and signature
+                # for the sources
+                my $checksum = parse_source_chksum($self, $position, $bp_wc);
+                my $signature = parse_source_signature($self, $position, $bp_struct, $bp_wc);
+                $sources{$position} = {
+                    'file'      => $file,
+                    'url'       => $line,
+                    'chksum'    => $checksum,
+                    'signature' => $signature
+                };
+            } else {
+                dbgmsg("DEBUG", "Local source file");
+                dbgmsg("DEBUG", "File: $line");
+                my $checksum = parse_source_chksum($self, $position, $bp_wc);
+                my $signature = parse_source_signature($self, $position, $bp_wc);
+                $sources{$position} = {
+                    'file'      => $line,
+                    'url'       => undef,
+                    'chksum'    => $checksum,
+                    'signature' => $signature
+                };
+            }
+            return \%sources;
+        }
+    }
+
+    return undef;
+}
+
+our sub parse_pkg_require_root_build ($self, $bp_wc) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
+    foreach my $line (@{$bp_wc}) {
+        $line =~ s/^\s+|\s+$//g;
+
+        if ($line =~ m/^root_required_for_build:\s+(true|false)/) {
+            dbgmsg("DEBUG", "Found blueprint 'root_required_for_build' keyword");
+            @{$bp_wc} = grep { $_ ne $line } @{$bp_wc};
+            $line =~ s/^root_required_for_build:\s+//;
+            return $line;
+        }
+    }
+
+    return undef;
+}
+
+our sub parse_pkg_format ($self, $bp_wc) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
+    foreach my $line (@{$bp_wc}) {
+        $line =~ s/^\s+|\s+$//g;
+
+        if ($line =~ m/^pkgformat:\s+(standard|meta|bundle)$/) {
+            dbgmsg("DEBUG", "Found blueprint 'pkgformat' keyword");
+            @{$bp_wc} = grep { $_ ne $line } @{$bp_wc};
+            $line =~ s/^pkgformat:\s+//;
+            dbgmsg("DEBUG", "blueprint 'pkgformat' value: $line");
+            return $line;
+        }
+    }
+
+    return undef;
+}
+
+our sub parse_pkg_upstream_maintainer ($self, $bp_wc) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
+    foreach my $line (@{$bp_wc}) {
+        $line =~ s/^\s+|\s+$//g;
+
+        if ($line =~ m/^upstream_maintainer:\s+[\w\s\<\>\@\.]+/) {
+            dbgmsg("DEBUG", "Found blueprint 'upstream_maintainer' keyword");
+            @{$bp_wc} = grep { $_ ne $line } @{$bp_wc};
+            $line =~ s/^upstream_maintainer:\s+//;
+            dbgmsg("DEBUG", "blueprint 'upstream_maintainer' value: $line");
+            return $line;
+        }
+    }
+
+    return undef;
+}
+
+our sub parse_pkg_vendor ($self, $bp_wc) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
+    foreach my $line (@{$bp_wc}) {
+        $line =~ s/^\s+|\s+$//g;
+
+        if ($line =~ m/^vendor:\s+[\w\s]+/) {
+            dbgmsg("DEBUG", "Found blueprint 'vendor' keyword");
+            @{$bp_wc} = grep { $_ ne $line } @{$bp_wc};
+            $line =~ s/^vendor:\s+//;
+            dbgmsg("DEBUG", "blueprint 'vendor' value: $line");
+            return $line;
+        }
+    }
+
+    return undef;
+}
+
+our sub parse_pkg_list ($self, $bp_wc) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
+    foreach my $line (@{$bp_wc}) {
+        $line =~ s/^\s+|\s+$//g;
+
+        if ($line =~ m/^packages:\s+[a-zA-Z0-9\-\_\s\,]+/) {
+            dbgmsg("DEBUG", "Found blueprint 'packages' keyword");
+            @{$bp_wc} = grep { $_ ne $line } @{$bp_wc};
+            $line =~ s/^packages:\s+//;
+            my @packages = split(/\,\s+/ ,$line);
+            dbgmsg("DEBUG", "blueprint 'packages' value: @packages");
+            return \@packages;
+        }
+    }
+
+    return undef;
 }
 
 my sub parse_bp_metadata ($self, $content_type, @bp_wc_contents) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
     my %bp_struct = ();
 
     dbgmsg("DEBUG", "Content Type: $content_type");
@@ -734,34 +897,212 @@ my sub parse_bp_metadata ($self, $content_type, @bp_wc_contents) {
         dbgmsg("DEBUG", "line: $line");
     }
 
-    $bp_struct{'pkgtype'} = $content_type;
-    $bp_struct{'srcpkg_name'}  = parse_srcpkg_name($self, \@bp_wc_contents);
-    dbgmsg("TRACE", "BP lines: ". scalar @bp_wc_contents);
-    $bp_struct{'version'}      = parse_pkg_version($self, \@bp_wc_contents);
-    dbgmsg("TRACE", "BP lines: ". scalar @bp_wc_contents);
-    $bp_struct{'release'}      = parse_pkg_release($self, \@bp_wc_contents);
-    dbgmsg("TRACE", "BP lines: ". scalar @bp_wc_contents);
-    $bp_struct{'distribution'} = parse_pkg_distribution($self, \@bp_wc_contents);
-    dbgmsg("TRACE", "BP lines: ". scalar @bp_wc_contents);
+    $bp_struct{'pkgtype'}       = $content_type;
+    $bp_struct{'pkgformat'}     = parse_pkg_format($self, \@bp_wc_contents);
+    dbgmsg("DEBUG", "BP lines: ". scalar @bp_wc_contents);
+    $bp_struct{'srcpkg_name'}   = parse_srcpkg_name($self, \@bp_wc_contents);
+    dbgmsg("DEBUG", "BP lines: ". scalar @bp_wc_contents);
+    $bp_struct{'version'}       = parse_pkg_version($self, \@bp_wc_contents);
+    dbgmsg("DEBUG", "BP lines: ". scalar @bp_wc_contents);
+    $bp_struct{'release'}       = parse_pkg_release($self, \@bp_wc_contents);
+    dbgmsg("DEBUG", "BP lines: ". scalar @bp_wc_contents);
+    $bp_struct{'distribution'}  = parse_pkg_distribution($self, \@bp_wc_contents);
+    dbgmsg("DEBUG", "BP lines: ". scalar @bp_wc_contents);
     ($bp_struct{'license'},
-     $bp_struct{'foss'}    )   = parse_pkg_license($self, $content_type, \@bp_wc_contents);
-    dbgmsg("TRACE", "BP lines: ". scalar @bp_wc_contents);
+     $bp_struct{'foss'}    )    = parse_pkg_license($self, $content_type, \@bp_wc_contents);
+    dbgmsg("DEBUG", "BP lines: ". scalar @bp_wc_contents);
     $bp_struct{'buildrequires'} = parse_pkg_build_requires($self, \@bp_wc_contents);
-    dbgmsg("TRACE", "BP lines: ". scalar @bp_wc_contents);
-    $bp_struct{'buildroot'} = parse_pkg_buildroot($self, \@bp_wc_contents);
-    dbgmsg("TRACE", "BP lines: ". scalar @bp_wc_contents);
+    dbgmsg("DEBUG", "BP lines: ". scalar @bp_wc_contents);
+    $bp_struct{'buildroot'}     = parse_pkg_buildroot($self, \%bp_struct, \@bp_wc_contents);
+    dbgmsg("DEBUG", "BP lines: ". scalar @bp_wc_contents);
+    $bp_struct{'url'}           = parse_pkg_url($self, \@bp_wc_contents);
+    dbgmsg("DEBUG", "BP lines: ". scalar @bp_wc_contents);
+    $bp_struct{'sources'}       = parse_pkg_sources($self, \%bp_struct, \@bp_wc_contents);
+    dbgmsg("DEBUG", "BP lines: ". scalar @bp_wc_contents);
+    $bp_struct{'upstream_maintainer'}   = parse_pkg_upstream_maintainer($self, \@bp_wc_contents);
+    dbgmsg("DEBUG", "BP lines: ". scalar @bp_wc_contents);
+    $bp_struct{'vendor'}        = parse_pkg_vendor($self, \@bp_wc_contents);
+    dbgmsg("DEBUG", "BP lines: ". scalar @bp_wc_contents);
+    $bp_struct{'root_build'}    = parse_pkg_require_root_build($self, \@bp_wc_contents);
+    dbgmsg("DEBUG", "BP lines: ". scalar @bp_wc_contents);
+    $bp_struct{'package_list'}      = parse_pkg_list($self, \@bp_wc_contents);
+    dbgmsg("DEBUG", "BP lines: ". scalar @bp_wc_contents);
+
+    return \@bp_wc_contents, %bp_struct;
+}
+
+our sub parse_pkg_tags($self, $line) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
+    $line =~ s/^tags:\s+//;
+
+    return split(', ', $line);
+}
+
+our sub extract_pkg_info ($self, $pkg_name, $bp_struct, $bp_wc) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
+    my %bp_struct = %{$bp_struct};
+    my $pkgname = undef;
+    my $start_num = undef;
+    my $end_num = undef;
+    foreach my $line (@{$bp_wc}) {
+        $line =~ s/^\s+|\s+$//g;
+
+        if ($line =~ m/^Package\s+$pkg_name$/) {
+            $start_num = first_index { $_ eq $line } @{$bp_wc};
+            dbgmsg("DEBUG", "Found package: $pkg_name");
+            @{$bp_wc} = grep { $_ ne $line } @{$bp_wc};
+            my @pkg = ();
+            foreach my $_line (@{$bp_wc}) {
+                # get the line number we're on...
+                $end_num = first_index { $_ eq $_line } @{$bp_wc};
+                last if ($_line =~ m/^\s+End$/);
+                push(@pkg, $_line);
+            }
+            return $start_num, $end_num, @pkg;
+        }
+    }
+
+}
+
+our sub parse_pkg_description ($self, @pkg_info) {
+    my $description = undef;
+    my @pkg_wc = @pkg_info;
+    my @raw_description = ();
+
+    foreach my $line (@pkg_wc) {
+        if ($line =~ m/^\s*Description\s*$/) {
+            @pkg_wc = grep { $_ ne $line } @pkg_wc;
+            dbgmsg("DEBUG", "Found package description block");
+            foreach my $_line (@pkg_info) {
+                dbgmsg("DEBUG", "\$_line: $_line");
+                last if ($_line =~ m/^\s+EndDescription\s*$/);
+                push(@raw_description, $_line);
+            }
+        }
+    }
+
+    say STDERR "DESCRIPTION: @raw_description";
+
+    return $description;
+}
+
+our sub parse_bp_pkgs ($self, $pkg_name, $bp_struct, @pkg_info) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+    my @pkg_wc = @pkg_info;
+
+    my %bp_struct = %{$bp_struct};
+    $bp_struct{'packages'}->{$pkg_name} = ();
+    foreach my $line (@pkg_wc) {
+        $line =~ s/^\s+|\s+$//g;
+
+        if ($line =~ /^summary:\s+.*/) {
+            dbgmsg("DEBUG", "Found package keyword 'summary'");
+            @pkg_info = grep { $_ !~ m/^\s*summary:\s+.*$/ } @pkg_info;
+            $line =~ s/^summary:\s+//;
+            $bp_struct{'packages'}->{$pkg_name}->{'summary'} = $line;
+        } elsif ($line =~ /^group:\s+/) {
+            dbgmsg("DEBUG", "Found package keyword 'group'");
+            @pkg_info = grep { $_ !~ m/^\s*group:\s+.*$/ } @pkg_info;
+            $line =~ s/^group:\s+//;
+            $bp_struct{'packages'}->{$pkg_name}->{'group'} = $line;
+        } elsif ($line =~ m/^tags:\s+/) {
+            dbgmsg("DEBUG", "Found package keyword 'tags'");
+            @pkg_info = grep { $_ !~ m/^\s*tags:\s+.*$/ } @pkg_info;
+            $line =~ s/^tags:\s+//;
+            # each tag is delimited by a comma, so put that in a list
+            my @tags = split(/\,\s+|\,/, $line);
+            # there can be only one tag set in a package, so we can safely
+            #   put the whole list onto the structure
+            $bp_struct{'packages'}->{$pkg_name}->{'tags'} = \@tags;
+        } elsif ($line =~ m/^requires:\s+/) {
+            dbgmsg("DEBUG", "Found package keyword 'requires'");
+            @pkg_info = grep { $_ !~ m/^\s*requires:\s+.*$/ } @pkg_info;
+            $line =~ s/^requires:\s+//;
+            # split on any commas
+            my @requires = split(/\,\s+|\,/, $line);
+            if (! exists($bp_struct{'packages'}->{$pkg_name}->{'requires'})) {
+                $bp_struct{'packages'}->{$pkg_name}->{'requires'} = \@requires;
+            } else {
+                my $type = ref $bp_struct{'packages'}->{$pkg_name}->{'requires'};
+                if ($type == 'ARRAY') {
+                    # extract that array and push the requires list to the end
+                    my @_requires = @{$bp_struct{'packages'}->{$pkg_name}->{'requires'}};
+                    push(@requires, @_requires);
+                    $bp_struct{'packages'}->{$pkg_name}->{'requires'} = \@requires;
+                }
+            }
+        } elsif ($line =~ m/^provides:\s+/) {
+            dbgmsg("DEBUG", "Found package keyword 'provides'");
+            @pkg_info = grep { $_ !~ m/^\s*provides:\s+.*$/ } @pkg_info;
+            $line =~ s/^provides:\s+//;
+            my @provides = split(/\,\s+|\,/, $line);
+            if (! exists($bp_struct{'packages'}->{$pkg_name}->{'provides'})) {
+                $bp_struct{'packages'}->{$pkg_name}->{'provides'} = \@provides;
+            } else {
+                my $type = ref $bp_struct{'packages'}->{$pkg_name}->{'provides'};
+                if ($type == 'ARRAY') {
+                    my @_provides = @{$bp_struct{'packages'}->{$pkg_name}->{'provides'}};
+                    push(@provides, @_provides);
+                    $bp_struct{'packages'}->{$pkg_name}->{'provides'} = \@provides;
+                }
+            }
+        } elsif ($line =~ m/^pkgclass:\s+/) {
+            dbgmsg("DEBUG", "Found package keyword 'pkgclass'");
+            @pkg_info = grep { $_ !~ m/^\s*pkgclass:\s+.*$/ } @pkg_info;
+            $line =~ s/^pkgclass:\s+//;
+            $bp_struct{'packages'}->{$pkg_name}->{'pkgclass'} = $line;
+        } elsif ($line =~ m/^Description/) {
+            dbgmsg("DEBUG", "Found package keyword 'Description' block");
+            my $description = parse_pkg_description($self, @pkg_info);
+            $bp_struct{'packages'}->{$pkg_name}->{'description'} = $description;
+        } elsif ($line =~ m/^Trigger\s+[a-zA-Z0-9\-\_\+\.]+/) {
+            dbgmsg("DEBUG", "Found package keyword 'Trigger' block");
+        } elsif ($line =~ m/^PreInstall/) {
+            dbgmsg("DEBUG", "Found package keyword 'PreInstall' block");
+        } elsif ($line =~ m/^PostInstall/) {
+            dbgmsg("DEBUG", "Found package keyword 'PostInstall' block");
+        } elsif ($line =~ m/^PreUninstall/) {
+            dbgmsg("DEBUG", "Found package keyword 'PreUninstall' block");
+        } elsif ($line =~ m/^PostUninstall/) {
+            dbgmsg("DEBUG", "Found package keyword 'PostUninstall' block");
+        } elsif ($line =~ m/^PreTransaction/) {
+            dbgmsg("DEBUG", "Found package keyword 'PreTransaction' block");
+        } elsif ($line =~ m/^PostTransaction/) {
+            dbgmsg("DEBUG", "Found package keyword 'PostTransaction' block");
+        } elsif ($line =~ m/^FileList/) {
+            dbgmsg("DEBUG", "Found package keyword 'FileList' block");
+        }
+    }
 
     return %bp_struct;
 }
 
+our sub strip_white_space_lines ($self, $bp_wc) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
+    foreach my $line (@{$bp_wc}) {
+        if ($line eq "") {
+            @{$bp_wc} = grep { $_ ne $line } @{$bp_wc};
+        }
+    }
+}
+
 our sub process_blueprint_file ($self, $blueprint_file) {
-    my %blueprint_structure;
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
+    my %blueprint_structure = ();
 
     my $content_type = undef;
     my $bp_wc = undef;
     my $file = path($blueprint_file);
     my @blueprint_contents = $file->lines({ chomp => 1 });
-    my @_blueprint_working_copy;
 
     if (check_for_blueprint_block_bounding($self, @blueprint_contents) == true) {
         shift @blueprint_contents;
@@ -771,7 +1112,20 @@ our sub process_blueprint_file ($self, $blueprint_file) {
             dbgmsg("ERROR", $_errors{'EWRONGPKGTYPE'}->{'msg'} . ": Exiting");
             exit $_errors{'EWRONGPKGTYPE'}->{'code'};
         }
-        %blueprint_structure = parse_bp_metadata($self, $content_type, @{$bp_wc});
+        strip_white_space_lines($self, $bp_wc);
+        ($bp_wc, %blueprint_structure) = parse_bp_metadata($self, $content_type, @{$bp_wc});
+        my @pkg_info;
+        foreach my $pkg (@{$blueprint_structure{'package_list'}}) {
+            dbgmsg("DEBUG", "Extracting package info for $pkg");
+            my $start = undef;
+            my $end   = undef;
+            ($start, $end, @pkg_info) = extract_pkg_info($self, $pkg, \%blueprint_structure, \@{$bp_wc});
+            dbgmsg("DEBUG", "Package info for $pkg starts on line $start and ends on line $end");
+            # strip out this package from our working copy
+            my @_tmp;
+            @{$bp_wc} = @{$bp_wc}[ (${end} + 1) .. $#{$bp_wc}];
+            %blueprint_structure = parse_bp_pkgs($self, $pkg, \%blueprint_structure, @pkg_info);
+        }
     }
 
     return %blueprint_structure;
