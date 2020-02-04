@@ -970,16 +970,21 @@ our sub extract_pkg_info ($self, $pkg_name, $bp_struct, $bp_wc) {
 }
 
 our sub parse_pkg_description ($self, @pkg_info) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
     my $description = undef;
     my @pkg_wc = @pkg_info;
     my @raw_description = ();
 
+    my $end_num = undef;
     foreach my $line (@pkg_wc) {
         if ($line =~ m/^\s*Description\s*$/) {
             @pkg_wc = grep { $_ ne $line } @pkg_wc;
             dbgmsg("DEBUG", "Found package description block");
             foreach my $_line (@pkg_info) {
                 dbgmsg("DEBUG", "\$_line: $_line");
+                $end_num = first_index { $_ eq $_line } @pkg_info;
                 last if ($_line =~ m/^\s+EndDescription\s*$/);
                 $_line =~ s/^\s+|\s+$//g;
                 push(@raw_description, $_line) if $_line !~ m/^\s*Description\s*$/;
@@ -987,15 +992,46 @@ our sub parse_pkg_description ($self, @pkg_info) {
         }
     }
 
+    @pkg_info = @pkg_info[ (${end_num} + 1) .. $#pkg_info];
     $description = "@raw_description";
     $description = encode_base64($description);
 
-    return $description;
+    # remove the description block from the working copy
+
+
+    return $description, @pkg_info;
+}
+
+our sub extract_code_block ($self, $block_name, @content) {
+    my $sub = (caller(0))[3];
+    dbgmsg("TRACE", "sub: $sub");
+
+    my $end_num = undef;
+    my @block = ();
+
+    foreach my $line (@content) {
+        if ($line =~ m/^\s*$block_name\s*$/) {
+            dbgmsg("DEBUG", "Found package post-install block");
+            foreach my $_line (@content) {
+                dbgmsg("DEBUG", "\$_line: $_line");
+                $end_num = first_index { $_ eq $_line } @content;
+                last if ($_line =~ m/^\s*End$block_name\s*$/);
+                $_line = encode_base64($_line) if $_line !~ m/^\s*$block_name\s*$/;
+                chomp $_line;
+                push(@block, $_line) if $_line !~ m/^\s*$block_name\s*$/;
+            }
+        }
+    }
+
+    @content = @content[ (${end_num} + 1) .. $#content];
+
+    return \@block, @content;
 }
 
 our sub parse_bp_pkgs ($self, $pkg_name, $bp_struct, @pkg_info) {
     my $sub = (caller(0))[3];
     dbgmsg("TRACE", "sub: $sub");
+
     my @pkg_wc = @pkg_info;
 
     my %bp_struct = %{$bp_struct};
@@ -1061,23 +1097,47 @@ our sub parse_bp_pkgs ($self, $pkg_name, $bp_struct, @pkg_info) {
             $bp_struct{'packages'}->{$pkg_name}->{'pkgclass'} = $line;
         } elsif ($line =~ m/^Description/) {
             dbgmsg("DEBUG", "Found package keyword 'Description' block");
-            my $description = parse_pkg_description($self, @pkg_info);
+            my $description = undef;
+            ($description, @pkg_info) = parse_pkg_description($self, @pkg_info);
             chomp($description);
             $bp_struct{'packages'}->{$pkg_name}->{'description'} = $description;
         } elsif ($line =~ m/^Trigger\s+[a-zA-Z0-9\-\_\+\.]+/) {
             dbgmsg("DEBUG", "Found package keyword 'Trigger' block");
+            # TODO: Rework, since right now, this only allows one trigger block to exist in
+            # a package, which might not necessarily be appropriate
+            my $trigger_block = undef;
+            ($trigger_block, @pkg_info) = extract_code_block($self, 'Trigger', @pkg_info);
+            $bp_struct{'packages'}->{$pkg_name}->{'scripts'}->{'trigger'} = $trigger_block;
         } elsif ($line =~ m/^PreInstall/) {
             dbgmsg("DEBUG", "Found package keyword 'PreInstall' block");
+            my $pre_inst_block = undef;
+            ($pre_inst_block, @pkg_info) = extract_code_block($self, 'PreInstall', @pkg_info);
+            $bp_struct{'packages'}->{$pkg_name}->{'scripts'}->{'preInstall'} = $pre_inst_block;
         } elsif ($line =~ m/^PostInstall/) {
             dbgmsg("DEBUG", "Found package keyword 'PostInstall' block");
+            my $post_inst_block = undef;
+            ($post_inst_block, @pkg_info) = extract_code_block($self, 'PostInstall', @pkg_info);
+            $bp_struct{'packages'}->{$pkg_name}->{'scripts'}->{'postInstall'} = $post_inst_block;
         } elsif ($line =~ m/^PreUninstall/) {
             dbgmsg("DEBUG", "Found package keyword 'PreUninstall' block");
+            my $pre_uninst_block = undef;
+            ($pre_uninst_block, @pkg_info) = extract_code_block($self, 'PreUninstall', @pkg_info);
+            $bp_struct{'packages'}->{$pkg_name}->{'scripts'}->{'PreUninstall'} = $pre_uninst_block;
         } elsif ($line =~ m/^PostUninstall/) {
             dbgmsg("DEBUG", "Found package keyword 'PostUninstall' block");
+            my $post_uninst_block = undef;
+            ($post_uninst_block, @pkg_info) = extract_code_block($self, 'PostUninstall', @pkg_info);
+            $bp_struct{'packages'}->{$pkg_name}->{'scripts'}->{'postUninstall'} = $post_uninst_block;
         } elsif ($line =~ m/^PreTransaction/) {
             dbgmsg("DEBUG", "Found package keyword 'PreTransaction' block");
+            my $pre_trans_block = undef;
+            ($pre_trans_block, @pkg_info) = extract_code_block($self, 'PreTransaction', @pkg_info);
+            $bp_struct{'packages'}->{$pkg_name}->{'scripts'}->{'preTransaction'} = $pre_trans_block;
         } elsif ($line =~ m/^PostTransaction/) {
             dbgmsg("DEBUG", "Found package keyword 'PostTransaction' block");
+            my $post_trans_block = undef;
+            ($post_trans_block, @pkg_info) = extract_code_block($self, 'PostTransaction', @pkg_info);
+            $bp_struct{'packages'}->{$pkg_name}->{'scripts'}->{'postTransaction'} = $post_trans_block;
         } elsif ($line =~ m/^FileList/) {
             dbgmsg("DEBUG", "Found package keyword 'FileList' block");
         }
@@ -1126,7 +1186,6 @@ our sub process_blueprint_file ($self, $blueprint_file) {
             ($start, $end, @pkg_info) = extract_pkg_info($self, $pkg, \%blueprint_structure, \@{$bp_wc});
             dbgmsg("DEBUG", "Package info for $pkg starts on line $start and ends on line $end");
             # strip out this package from our working copy
-            my @_tmp;
             @{$bp_wc} = @{$bp_wc}[ (${end} + 1) .. $#{$bp_wc}];
             %blueprint_structure = parse_bp_pkgs($self, $pkg, \%blueprint_structure, @pkg_info);
         }
