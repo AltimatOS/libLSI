@@ -24,6 +24,8 @@ jobs:
       - uses: actions/checkout@v1
       - name: Install Dependencies
         shell: bash
+        run: cpan JSON::MaybeXS
+        run: cpan Test::Pod
         run: cpan boolean
       - name: perl -V
         run: perl -V
