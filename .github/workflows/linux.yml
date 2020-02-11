@@ -22,10 +22,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - name: Install Dependencies
+      - name: Install Dependency - Test/Pod
         shell: bash
-        run: cpan JSON::MaybeXS
         run: cpan Test::Pod
+      - name: Install Dependency - boolean
         run: cpan boolean
       - name: perl -V
         run: perl -V

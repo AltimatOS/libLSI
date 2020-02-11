@@ -1,3 +1,5 @@
+[![](https://github.com/AltimatOS/libLSI/workflows/linux/badge.svg)](https://github.com/AltimatOS/libLSI/actions)
+
 # libLSI
 
 Core library of functions and configuration for the Linux Software Installer system from AltimatOS.
