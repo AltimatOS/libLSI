@@ -22,12 +22,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - name: Install Dependency - Test/Pod
+      - name: Install Dependency - Test::Pod
         shell: bash
         run: cpan Test::Pod
       - name: Install Dependency - boolean
+        shell: bash
         run: cpan boolean
+      - name: Install Dependency - List::MoreUtils
       - name: perl -V
+        shell: bash
         run: perl -V
       - name: make test
+        shell: bash
         run: make test
