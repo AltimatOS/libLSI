@@ -1,4 +1,4 @@
-[![](https://github.com/AltimatOS/libLSI/workflows/linux/badge.svg)](https://github.com/AltimatOS/libLSI/actions)
+![Linux](https://github.com/AltimatOS/libLSI/workflows/Linux/badge.svg?branch=master)
 
 # libLSI
 
