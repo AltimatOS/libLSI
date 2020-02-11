@@ -37,6 +37,9 @@ jobs:
       - name: Install Dependency - Test::Version
         shell: bash
         run: cpan Test::Version
+      - name: Install Dependency - Pod::Coverage::TrustPod
+        shell: bash
+        run: cpan Pod::Coverage::TrustPod
       - name: Install Dependency - ExtUtils::Config
         shell: bash
         run: cpan ExtUtils::Config
@@ -46,9 +49,6 @@ jobs:
       - name: Install Dependency - ExtUtils::InstallPaths
         shell: bash
         run: cpan ExtUtils::InstallPaths
-      - name: Install Dependency - Pod::Coverage::TrustPod
-        shell: bash
-        run: cpan Pod::Coverage::TrustPod
       - name: Install Dependency - Readonly
         shell: bash
         run: cpan Readonly
