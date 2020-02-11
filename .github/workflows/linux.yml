@@ -37,6 +37,24 @@ jobs:
       - name: Install Dependency - Test::Version
         shell: bash
         run: cpan Test::Version
+      - name: Install Dependency - Test::MinimumVersion
+        shell: bash
+        run: cpan Test::MinimumVersion
+      - name: Install Dependency - Pod::Coverage::TrustPod
+        shell: bash
+        run: cpan Pod::Coverage::TrustPod
+      - name: Install Dependency - Test::CPAN::Changes
+        shell: bash
+        run: cpan Test::CPAN::Changes
+      - name: Install Dependency - Test::CPAN::Meta
+        shell: bash
+        run: cpan Test::CPAN::Meta
+      - name: Install Dependency - Test::Mojibake
+        shell: bash
+        run: cpan Test::Mojibake
+      - name: Install Dependency - Test::Portability::Files
+        shell: bash
+        run: cpan Test::Portability::Files
       - name: Install Dependency - URI
         shell: bash
         run: cpan URI
