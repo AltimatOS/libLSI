@@ -31,6 +31,12 @@ jobs:
       - name: Install Dependency - List::MoreUtils
         shell: bash
         run: cpan List::MoreUtils
+      - name: Install Dependency - Path::Tiny
+        shell: bash
+        run: cpan Path::Tiny
+      - name: Install Dependency - File::Slurper
+        shell: bash
+        run: cpan File::Slurper
       - name: perl -V
         shell: bash
         run: perl -V
