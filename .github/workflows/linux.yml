@@ -37,6 +37,9 @@ jobs:
       - name: Install Dependency - Test::Version
         shell: bash
         run: cpan Test::Version
+      - name: Install Dependency - Readonly
+        shell: bash
+        run: cpan Readonly
       - name: Install Dependency - Perl::Critic
         shell: bash
         run: cpan Perl::Critic
