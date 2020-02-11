@@ -22,6 +22,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
+      - name: Install Dependency - JSON
+        shell: bash
+        run: cpan JSON
+      - name: Install Dependency - URI
+        shell: bash
+        run: cpan URI
       - name: Install Dependency - Test::Pod
         shell: bash
         run: cpan Test::Pod
