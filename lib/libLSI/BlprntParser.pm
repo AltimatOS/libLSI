@@ -264,7 +264,7 @@ sub dbgmsg ($level, $msg) {
     );
 
     if (defined $ENV{'LSI_DEBUG'}) {
-        if ($ENV{'LSI_DEBUG'} >= $level_by_name{$level}) {
+        if ($ENV{'LSI_DEBUG'} <= $level_by_name{$level}) {
             say STDERR "$level: $msg";
         }
     }
