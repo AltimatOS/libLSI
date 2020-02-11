@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        perl-version: [latest, 5.28, 5.26, 5.24, 5.22, "5.20", 5.18, 5.16, 5.14, 5.12, "5.10", 5.8]
+        perl-version: ["5.30"]
 
     container:
       image: perl:${{ matrix.perl-version }}
@@ -37,6 +37,9 @@ jobs:
       - name: Install Dependency - Test::Version
         shell: bash
         run: cpan Test::Version
+      - name: Install Dependency - Perl::Critic
+        shell: bash
+        run: cpan Perl::Critic
       - name: Install Dependency - Test::MinimumVersion
         shell: bash
         run: cpan Test::MinimumVersion
