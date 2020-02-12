@@ -22,14 +22,5 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - name: What Directory
-        run: pwd
-      - name: Which CPAN
-        shell: bash
-        run: which cpan
-      - name: perl -V
-        shell: bash
-        run: perl -V
-      - name: make test
-        shell: bash
-        run: make test
+      - name: Install Dependencies
+        run: ./build/depsinst.pl
