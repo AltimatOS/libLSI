@@ -22,8 +22,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - name: List Directory
-        run: ls -l
+      - name: What Directory
+        run: pwd
       - name: Which CPAN
         shell: bash
         run: which cpan
