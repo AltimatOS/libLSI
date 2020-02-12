@@ -9,6 +9,7 @@ my @deps = (
     'JSON',
     'Test::Pod',
     'Test::Pod::Coverage',
+    'Test::Warnings',
     'Test::Spelling',
     'Test::Version',
     'Pod::Coverage::TrustPod',
@@ -43,6 +44,7 @@ foreach my $dir (
 }
 
 foreach my $pkg (@deps) {
+    print STDOUT "BUILDING: $pkg\n";
     system("/usr/local/bin/cpan -j /__w/libLSI/libLSI/build/MyConfig.pm -i $pkg");
 }
 
