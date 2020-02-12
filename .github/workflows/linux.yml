@@ -1,21 +1,23 @@
 name: Linux
 
-on: [pull_request, push]
+on: 
+  push:
+    branches:
+      - '*'
+    tags-ignore:
+      - '*'
+  pull_request:
 
 jobs:
   perl:
-    env:
-      PERL_USE_UNSAFE_INC: 0
-      AUTHOR_TESTING: 1
-      AUTOMATED_TESTING: 1
-      RELEASE_TESTING: 1
 
     runs-on: ubuntu-latest
 
     strategy:
-      fail-fast: false
       matrix:
-        perl-version: ["5.30"]
+        perl-version:
+          - latest
+          - threaded
 
     container:
       image: perl:${{ matrix.perl-version }}

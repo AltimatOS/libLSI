@@ -46,6 +46,10 @@ foreach my $dir (
 foreach my $pkg (@deps) {
     print STDOUT "BUILDING: $pkg\n";
     system("/usr/local/bin/cpan -j /__w/libLSI/libLSI/build/MyConfig.pm -i $pkg");
+    my $ret = $?;
+    if ($ret != 0) {
+        exit $ret;
+    }
 }
 
 exit 0;
