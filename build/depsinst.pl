@@ -12,6 +12,7 @@ my @deps = (
     'Test::Warnings',
     'Test::Spelling',
     'Test::Version',
+    'Test::Output',
     'Pod::Coverage::TrustPod',
     'ExtUtils::Config',
     'ExtUtils::Helpers',
