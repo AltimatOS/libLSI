@@ -24,6 +24,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
+      - name: Display Runtime
+        run: ./build/getruntime.pl
       - name: Install Dependencies
         run: ./build/depsinst.pl
       - name: Run Tests
