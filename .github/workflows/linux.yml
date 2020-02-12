@@ -22,6 +22,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
+      - name: List Directory
+        run: ls -l
       - name: Install Dependency - JSON
         shell: bash
         run: cpan JSON
