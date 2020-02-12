@@ -24,3 +24,5 @@ jobs:
       - uses: actions/checkout@v1
       - name: Install Dependencies
         run: ./build/depsinst.pl
+      - name: Run Tests
+        run: make test
